@@ -94,7 +94,7 @@ class BinanceWs:
         # 传递值
         async for msg in self._ws:
             msg = json.loads(msg)
-            logger.debug(beeprint.pp('\n' + msg, output=False, string_break_enable=False, sort_keys=False))
+            logger.debug('\n' + beeprint.pp(msg, output=False, string_break_enable=False, sort_keys=False))
             self._msg_handler(msg)
 
     async def _ws_manager(self):
@@ -131,12 +131,25 @@ class BinanceWs:
         await self._ws_ok
         return self
 
-    @no_data_loss_async_generator_decorator
-    async def watch_order(self):
-        while True:
+    def _put_hook(self, type):
+        '''
+        在ws数据流中放置探测钩子
+
+        :param type: 类型，有order、balance等币安user data
+        :return:asyncio.Future类型的钩子
+        '''
+        if type == 'order':
             hook_future = asyncio.get_running_loop().create_future()
             self._detect_hook[hook_future] = [{"e": "executionReport"}]
-            yield await hook_future
+            return hook_future
+
+    @no_data_loss_async_generator_decorator
+    async def watch_order(self):
+        hook_future = self._put_hook('order')
+        while True:
+            msg = await hook_future
+            hook_future = self._put_hook('order')
+            yield msg
 
 
 if __name__ == '__main__':
