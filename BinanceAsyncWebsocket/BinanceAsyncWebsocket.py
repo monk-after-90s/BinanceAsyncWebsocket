@@ -1,6 +1,7 @@
 import asyncio, aiohttp
 import json
 import traceback
+from copy import deepcopy
 
 import beeprint
 from loguru import logger
@@ -113,7 +114,7 @@ class BinanceWs:
         reciever_done = []
         for reciever, _filters in self._detect_hook.items():
             if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
-                reciever.set_result(news)
+                reciever.set_result(deepcopy(news))
                 reciever_done.append(reciever)
         for reciever in reciever_done:
             self._detect_hook.pop(reciever)
