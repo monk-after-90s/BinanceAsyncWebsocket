@@ -1,6 +1,3 @@
-import hashlib
-import hmac
-import datetime
 import asyncio, aiohttp
 import json
 import traceback
@@ -11,16 +8,6 @@ from loguru import logger
 import websockets
 from websockets import WebSocketClientProtocol
 from NoLossAsyncGenerator import no_data_loss_async_generator_decorator
-
-
-def generate_signature(secret, **kwargs):
-    if 'recvWindow' not in kwargs.keys():
-        kwargs['recvWindow'] = 5000
-    if 'timestamp' not in kwargs.keys():
-        kwargs['timestamp'] = int(datetime.datetime.utcnow().timestamp() * 1000)
-    params = [(str(key) + '=' + str(value)) for key, value in kwargs.items()]
-    msg = '&'.join(params).encode('utf-8')
-    return hmac.new(secret.encode('utf-8'), msg, digestmod=hashlib.sha256).hexdigest()
 
 
 class BinanceWs:
@@ -47,14 +34,14 @@ class BinanceWs:
         if ws_close_task:
             await ws_close_task
 
-    def _generate_signature(self, **kwargs):
-        if 'recvWindow' not in kwargs.keys():
-            kwargs['recvWindow'] = 5000
-        if 'timestamp' not in kwargs.keys():
-            kwargs['timestamp'] = int(datetime.datetime.utcnow().timestamp() * 1000)
-        params = [(str(key) + '=' + str(value)) for key, value in kwargs.items()]
-        msg = '&'.join(params).encode('utf-8')
-        return hmac.new(self._secret.encode('utf-8'), msg, digestmod=hashlib.sha256).hexdigest()
+    # def _generate_signature(self, **kwargs):
+    #     if 'recvWindow' not in kwargs.keys():
+    #         kwargs['recvWindow'] = 5000
+    #     if 'timestamp' not in kwargs.keys():
+    #         kwargs['timestamp'] = int(datetime.datetime.utcnow().timestamp() * 1000)
+    #     params = [(str(key) + '=' + str(value)) for key, value in kwargs.items()]
+    #     msg = '&'.join(params).encode('utf-8')
+    #     return hmac.new(self._secret.encode('utf-8'), msg, digestmod=hashlib.sha256).hexdigest()
 
     @property
     def session(self):
@@ -118,7 +105,7 @@ class BinanceWs:
             try:
                 await time_limitted_ws_task
             except:
-                logger.debug('\n'+ traceback.format_exc())
+                logger.debug('\n' + traceback.format_exc())
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
