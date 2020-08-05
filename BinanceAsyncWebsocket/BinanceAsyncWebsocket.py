@@ -105,8 +105,11 @@ class BinanceWs:
             time_limitted_ws_task = asyncio.create_task(asyncio.wait_for(self._time_limitted_ws(), 20 * 3600))
             try:
                 await time_limitted_ws_task
-            except:
+            except TimeoutError:
                 logger.debug('\n' + traceback.format_exc())
+            except:
+                logger.error('\n' + traceback.format_exc())
+            finally:
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
