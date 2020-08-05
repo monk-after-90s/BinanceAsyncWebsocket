@@ -106,7 +106,7 @@ class BinanceWs:
         # 传递值
         async for msg in self._ws:
             msg = json.loads(msg)
-            logger.debug(beeprint.pp(msg, output=False, string_break_enable=False, sort_keys=False))
+            logger.debug(beeprint.pp('\n' + msg, output=False, string_break_enable=False, sort_keys=False))
             self._msg_handler(msg)
 
     async def _ws_manager(self):
@@ -118,7 +118,7 @@ class BinanceWs:
             try:
                 await time_limitted_ws_task
             except:
-                logger.debug(traceback.format_exc())
+                logger.debug('\n'+ traceback.format_exc())
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
