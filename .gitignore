@@ -1,6 +1,6 @@
 *test.py
 .idea
 .DS_Store
-BinanceAsyncWebsocket.egg-info
+*.egg-info
 build/
 dist/
