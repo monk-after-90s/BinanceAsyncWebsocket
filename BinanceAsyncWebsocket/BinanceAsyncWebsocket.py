@@ -8,7 +8,7 @@ from loguru import logger
 
 import websockets
 from websockets import WebSocketClientProtocol
-from NoLossAsyncGenerator import no_data_loss_async_generator
+from NoLossAsyncGenerator import NoLossAsyncGenerator
 
 
 class BinanceWs:
@@ -20,6 +20,7 @@ class BinanceWs:
         self._secret = secret
         self._session: aiohttp.ClientSession = None
         self._ws: websockets.WebSocketClientProtocol = None
+        self._ws_generator: NoLossAsyncGenerator = None
         # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_ok: asyncio.Future = None
         self._handlers = set()
@@ -93,8 +94,8 @@ class BinanceWs:
         if not self._ws_ok.done():
             self._ws_ok.set_result(None)
         # 传递值
-        async for msg in no_data_loss_async_generator(self._ws):
-            # todo 加锁保护
+        self._ws_generator = NoLossAsyncGenerator(self._ws)
+        async for msg in self._ws_generator:
             msg = json.loads(msg)
             logger.debug('\n' + beeprint.pp(msg, output=False, string_break_enable=False, sort_keys=False))
             tasks = []
@@ -110,12 +111,19 @@ class BinanceWs:
         asyncio.create_task(self._infinity_post_listenKey())
         while True:
             # 20小时一换ws连接
-            time_limitted_ws_task = asyncio.create_task(asyncio.wait_for(self._time_limitted_ws(), 20 * 3600))
+            time_limitted_ws_task = asyncio.create_task(self._time_limitted_ws())
+
+            async def sleep_then_raise():
+                await asyncio.sleep(20 * 3600)
+                raise TimeoutError('Time to change ws.')
+
             try:
-                await time_limitted_ws_task
-            except asyncio.exceptions.TimeoutError:
+                await asyncio.wait([time_limitted_ws_task, sleep_then_raise()], asyncio.FIRST_EXCEPTION)
+            except TimeoutError:  # 正常更换
+                if isinstance(self._ws_generator, NoLossAsyncGenerator):
+                    await self._ws_generator.wait_empty()
                 logger.debug('\n' + traceback.format_exc())
-            except:
+            except:  # 异常更换
                 logger.error('\n' + traceback.format_exc())
             finally:
                 if isinstance(self._ws, WebSocketClientProtocol):
