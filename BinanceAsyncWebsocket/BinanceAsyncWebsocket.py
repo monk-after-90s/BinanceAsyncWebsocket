@@ -20,6 +20,7 @@ class BinanceWs:
         self._secret = secret
         self._session: aiohttp.ClientSession = None
         self._ws: websockets.WebSocketClientProtocol = None
+        # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_generator: NoLossAsyncGenerator = None
         # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_ok: asyncio.Future = None
@@ -148,6 +149,17 @@ class BinanceWs:
         await self._ws_ok
         return self
 
+    # def _put_hook(self, type):
+    #     '''
+    #     在ws数据流中放置探测钩子
+    #
+    #     :param type: 类型，有order、balance等币安user data
+    #     :return:asyncio.Future类型的钩子
+    #     '''
+    #     if type == 'order':
+    #         hook_future = asyncio.get_running_loop().create_future()
+    #         self._detect_hook[hook_future] = [{"e": "executionReport"}]
+    #         return hook_future
     # def _put_hook(self, type):
     #     '''
     #     在ws数据流中放置探测钩子
