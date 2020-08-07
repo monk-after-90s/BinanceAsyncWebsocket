@@ -8,7 +8,7 @@ from loguru import logger
 
 import websockets
 from websockets import WebSocketClientProtocol
-from NoLossAsyncGenerator import no_data_loss_async_generator_decorator
+from NoLossAsyncGenerator import no_data_loss_async_generator
 
 
 class BinanceWs:
@@ -22,6 +22,7 @@ class BinanceWs:
         self._ws: websockets.WebSocketClientProtocol = None
         # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_ok: asyncio.Future = None
+        self._handlers = set()
 
     async def exit(self):
         session_close_task = None
@@ -92,10 +93,17 @@ class BinanceWs:
         if not self._ws_ok.done():
             self._ws_ok.set_result(None)
         # 传递值
-        async for msg in self._ws:
+        async for msg in no_data_loss_async_generator(self._ws):
+            # todo 加锁保护
             msg = json.loads(msg)
             logger.debug('\n' + beeprint.pp(msg, output=False, string_break_enable=False, sort_keys=False))
-            self._msg_handler(msg)
+            tasks = []
+            for handler in self._handlers:
+                if asyncio.iscoroutinefunction(handler):
+                    tasks.append(asyncio.create_task(handler(deepcopy(msg))))
+                else:
+                    handler(deepcopy(msg))
+            [await task for task in tasks]
 
     async def _ws_manager(self):
         # 半小时发一个ping
@@ -113,15 +121,15 @@ class BinanceWs:
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
-    def _msg_handler(self, news):
-        pass
-        # reciever_done = []
-        # for reciever, _filters in self._detect_hook.items():
-        #     if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
-        #         reciever.set_result(deepcopy(news))
-        #         reciever_done.append(reciever)
-        # for reciever in reciever_done:
-        #     self._detect_hook.pop(reciever)
+    # def _msg_handler(self, news):
+    #     pass
+    # reciever_done = []
+    # for reciever, _filters in self._detect_hook.items():
+    #     if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
+    #         reciever.set_result(deepcopy(news))
+    #         reciever_done.append(reciever)
+    # for reciever in reciever_done:
+    #     self._detect_hook.pop(reciever)
 
     @classmethod
     async def create_instance(cls, apikey, secret):
@@ -144,9 +152,31 @@ class BinanceWs:
     #         self._detect_hook[hook_future] = [{"e": "executionReport"}]
     #         return hook_future
 
-    @no_data_loss_async_generator_decorator
-    async def watch_order(self):
-        pass
+    def add_order_handler(self, handler):
+        '''
+        添加订单相关数据的处理函数或者异步函数，形如
+        def handler(msg):
+            ...
+        或
+        async def handler(msg):
+            ...
+
+        :param new_handler:
+        :return:
+        '''
+        # 异步函数
+        if asyncio.iscoroutinefunction(handler):
+            async def new_handler(msg):
+                if msg['e'] == "executionReport":
+                    return await handler(msg)
+
+            self._handlers.add(new_handler)
+        else:
+            def new_handler(msg):
+                if msg['e'] == "executionReport":
+                    return handler(msg)
+
+            self._handlers.add(new_handler)
         # hook_future = self._put_hook('order')
         # while True:
         #     msg = await hook_future
