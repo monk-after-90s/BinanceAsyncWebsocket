@@ -8,7 +8,7 @@ from loguru import logger
 
 import websockets
 from websockets import WebSocketClientProtocol
-from NoLossAsyncGenerator import no_data_loss_async_generator_decorator
+from NoLossAsyncGenerator import NoLossAsyncGenerator, no_data_loss_async_generator_decorator
 
 
 class BinanceWs:
@@ -20,7 +20,7 @@ class BinanceWs:
         self._secret = secret
         self._session: aiohttp.ClientSession = None
         self._ws: websockets.WebSocketClientProtocol = None
-        # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
+        self._ws_generator: NoLossAsyncGenerator = None
         self._ws_ok: asyncio.Future = None
         self._ws_data_containers = deque(maxlen=20,
                                          iterable=[asyncio.get_running_loop().create_future() for i in range(20)])
@@ -94,7 +94,8 @@ class BinanceWs:
         if not self._ws_ok.done():
             self._ws_ok.set_result(None)
         # 传递值
-        async for msg in self._ws:
+        self._ws_generator = NoLossAsyncGenerator(self._ws)
+        async for msg in self._ws_generator:
             msg = json.loads(msg)
             logger.debug('\n' + beeprint.pp(msg, output=False, string_break_enable=False, sort_keys=False))
             self._msg_handler(msg)
@@ -133,14 +134,6 @@ class BinanceWs:
         if target_index > self._ws_data_containers.maxlen // 2:
             for _ in range(target_index - self._ws_data_containers.maxlen // 2):
                 self._ws_data_containers.append(asyncio.get_running_loop().create_future())
-
-        # reciever_done = []
-        # for reciever, _filters in self._detect_hook.items():
-        #     if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
-        #         reciever.set_result(deepcopy(news))
-        #         reciever_done.append(reciever)
-        # for reciever in reciever_done:
-        #     self._detect_hook.pop(reciever)
 
     def _fill_futures(self):
         '''
