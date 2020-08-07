@@ -8,7 +8,7 @@ from loguru import logger
 
 import websockets
 from websockets import WebSocketClientProtocol
-from NoLossAsyncGenerator import NoLossAsyncGenerator
+from NoLossAsyncGenerator import NoLossAsyncGenerator, no_data_loss_async_generator_decorator
 
 
 class BinanceWs:
@@ -20,9 +20,7 @@ class BinanceWs:
         self._secret = secret
         self._session: aiohttp.ClientSession = None
         self._ws: websockets.WebSocketClientProtocol = None
-        # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_generator: NoLossAsyncGenerator = None
-        # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_ok: asyncio.Future = None
         self._handlers = set()
 
