@@ -117,10 +117,11 @@ class BinanceWs:
                 raise TimeoutError('Time to change ws.')
 
             try:
-                await asyncio.wait([time_limitted_ws_task, sleep_then_raise()], asyncio.FIRST_EXCEPTION)
-            except TimeoutError:  # 正常更换
-                if isinstance(self._ws_generator, NoLossAsyncGenerator):
-                    await self._ws_generator.wait_empty()
+                await asyncio.gather(time_limitted_ws_task, sleep_then_raise())
+            except TimeoutError as e:  # 正常更换
+                if str(e) == 'Time to change ws.' and isinstance(self._ws_generator, NoLossAsyncGenerator):
+                    # 等待可能累积的数据全部吐出来并关闭
+                    await self._ws_generator.close()
                 logger.debug('\n' + traceback.format_exc())
             except:  # 异常更换
                 logger.error('\n' + traceback.format_exc())
