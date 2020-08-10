@@ -173,6 +173,17 @@ class BinanceWs:
         Filter the ws data stream and push the filtered data to the async generator which is returned by the method.
         Remember to explicitly call the close method of the async generator to close the stream.
 
+        stream=binancews.filter_stream()
+
+        #handle message in one coroutine:
+        async for news in stream:
+            ...
+        #close the stream in another:
+        close_task=asyncio.create_task(stream.close())
+        ...
+        await close_task
+
+
         :param _filters:
         :return:
         '''
@@ -200,6 +211,17 @@ class BinanceWs:
         '''
         Filter the ws order data stream and push the filtered data to the async generator which is returned by the method.
         Remember to explicitly call the close method of the async generator to close the stream.
+
+
+        stream=binancews.order_stream()
+
+        #handle message in one coroutine:
+        async for news in stream:
+            ...
+        #close the stream in another:
+        close_task=asyncio.create_task(stream.close())
+        ...
+        await close_task
 
         :return:
         '''
