@@ -142,6 +142,19 @@ class BinanceWs:
         # for reciever in reciever_done:
         #     self._detect_hook.pop(reciever)
 
+    def _fill_futures(self):
+        '''
+        填充future直到至少一半队列数个pending future
+
+        :return:
+        '''
+        first_pending_future_index = self._find_first_pending_future_index()
+
+        # 补上至少一半队列数个pending future
+        if first_pending_future_index > self._ws_data_containers.maxlen // 2:
+            for _ in range(first_pending_future_index - self._ws_data_containers.maxlen // 2):
+                self._ws_data_containers.append(asyncio.get_running_loop().create_future())
+
     @classmethod
     async def create_instance(cls, apikey, secret):
         self = cls(apikey, secret)
@@ -165,13 +178,38 @@ class BinanceWs:
 
     @no_data_loss_async_generator_decorator
     async def watch_order(self):
-        pass
+        last_future = None
+        while True:
+            if not last_future:
+                current_future = self._ws_data_containers[self._find_first_pending_future_index()]
+            else:
+                while True:
+                    try:
+                        current_future = self._ws_data_containers[self._ws_data_containers.index(last_future) + 1]
+                    except IndexError:
+                        self._safely_replace_longer_q()
+                        current_future = self._ws_data_containers[self._find_first_pending_future_index()]
+                        break
+            yield deepcopy(await current_future)
+            last_future = current_future
         # hook_future = self._put_hook('order')
         # while True:
         #     msg = await hook_future
         #     hook_future = self._put_hook('order')
         #     yield msg
 
+    def _safely_replace_longer_q(self):
+        '''
+        安全的更换更长的futures deque，即_ws_data_containers
+
+        :return:
+        '''
+        self._ws_data_containers = deque(iterable=self._ws_data_containers,
+                                         maxlen=self._ws_data_containers.maxlen + 5)  # 扩展5个位置
+        # 补齐future
+        self._fill_futures()
+        logger.debug(
+            f'Extend deque:\n{beeprint.pp(self._ws_data_containers, sort_keys=False, string_break_enable=False)}')
 
 if __name__ == '__main__':
     pass
