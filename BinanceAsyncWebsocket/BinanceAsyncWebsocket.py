@@ -105,12 +105,20 @@ class BinanceWs:
         asyncio.create_task(self._infinity_post_listenKey())
         while True:
             # 20小时一换ws连接
-            time_limitted_ws_task = asyncio.create_task(asyncio.wait_for(self._time_limitted_ws(), 20 * 3600))
+            time_limitted_ws_task = asyncio.create_task(self._time_limitted_ws())
+
+            async def sleep_then_raise():
+                await asyncio.sleep(20 * 3600)
+                raise TimeoutError('Time to change ws.')
+
             try:
-                await time_limitted_ws_task
-            except asyncio.exceptions.TimeoutError:
+                await asyncio.gather(time_limitted_ws_task, sleep_then_raise())
+            except TimeoutError as e:  # 正常更换
+                if str(e) == 'Time to change ws.' and isinstance(self._ws_generator, NoLossAsyncGenerator):
+                    # 等待可能累积的数据全部吐出来并关闭
+                    await self._ws_generator.close()
                 logger.debug('\n' + traceback.format_exc())
-            except:
+            except:  # 异常更换
                 logger.error('\n' + traceback.format_exc())
             finally:
                 if isinstance(self._ws, WebSocketClientProtocol):
