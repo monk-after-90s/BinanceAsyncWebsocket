@@ -164,7 +164,7 @@ class BinanceWs:
 
             self._handlers.add(new_handler)
 
-    def _filter_stream(self, _filters: list = None):
+    def filter_stream(self, _filters: list = None):
         '''
         Filter the ws data stream and push the filtered data to the async generator which is returned by the method.
         Remember to explicitly call the close method of the async generator to close the stream.
@@ -199,7 +199,7 @@ class BinanceWs:
 
         :return:
         '''
-        return self._filter_stream([{"e": "executionReport"}])
+        return self.filter_stream([{"e": "executionReport"}])
 
 
 if __name__ == '__main__':
