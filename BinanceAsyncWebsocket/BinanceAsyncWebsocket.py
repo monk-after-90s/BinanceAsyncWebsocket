@@ -167,7 +167,7 @@ class BinanceWs:
     def _filter_stream(self, _filters: list = None):
         '''
         Filter the ws data stream and push the filtered data to the async generator which is returned by the method.
-        Remember to explicitly call its close method to close the stream.
+        Remember to explicitly call the close method of the async generator to close the stream.
 
         :param _filters:
         :return:
