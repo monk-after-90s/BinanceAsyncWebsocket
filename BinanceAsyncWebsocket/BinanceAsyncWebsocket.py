@@ -129,16 +129,6 @@ class BinanceWs:
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
-    # def _msg_handler(self, news):
-    #     pass
-    # reciever_done = []
-    # for reciever, _filters in self._detect_hook.items():
-    #     if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
-    #         reciever.set_result(deepcopy(news))
-    #         reciever_done.append(reciever)
-    # for reciever in reciever_done:
-    #     self._detect_hook.pop(reciever)
-
     @classmethod
     async def create_instance(cls, apikey, secret):
         self = cls(apikey, secret)
@@ -147,29 +137,6 @@ class BinanceWs:
         asyncio.create_task(self._ws_manager())
         await self._ws_ok
         return self
-
-    # def _put_hook(self, type):
-    #     '''
-    #     在ws数据流中放置探测钩子
-    #
-    #     :param type: 类型，有order、balance等币安user data
-    #     :return:asyncio.Future类型的钩子
-    #     '''
-    #     if type == 'order':
-    #         hook_future = asyncio.get_running_loop().create_future()
-    #         self._detect_hook[hook_future] = [{"e": "executionReport"}]
-    #         return hook_future
-    # def _put_hook(self, type):
-    #     '''
-    #     在ws数据流中放置探测钩子
-    #
-    #     :param type: 类型，有order、balance等币安user data
-    #     :return:asyncio.Future类型的钩子
-    #     '''
-    #     if type == 'order':
-    #         hook_future = asyncio.get_running_loop().create_future()
-    #         self._detect_hook[hook_future] = [{"e": "executionReport"}]
-    #         return hook_future
 
     def add_order_handler(self, handler):
         '''
