@@ -225,6 +225,15 @@ class BinanceWs:
         ag.close = close
         return ag
 
+    def order_stream(self):
+        '''
+        Filter the ws order data stream and push the filtered data to the async generator which is returned by the method.
+        Remember to explicitly call the close method of the async generator to close the stream.
+
+        :return:
+        '''
+        return self._filter_stream([{"e": "executionReport"}])
+
 
 if __name__ == '__main__':
     pass
