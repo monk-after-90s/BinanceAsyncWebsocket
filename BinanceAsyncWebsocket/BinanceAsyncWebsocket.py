@@ -2,7 +2,7 @@ import asyncio, aiohttp
 import json
 import traceback
 from copy import deepcopy
-
+from collections import deque
 import beeprint
 from loguru import logger
 
@@ -22,6 +22,8 @@ class BinanceWs:
         self._ws: websockets.WebSocketClientProtocol = None
         # self._detect_hook = {}  # {future:[{condition1:...,condition2:...},{condition3:...},...]}条件列表中的任何一个条件字典全部达成，便设置结果
         self._ws_ok: asyncio.Future = None
+        self._ws_data_containers = deque(maxlen=20,
+                                         iterable=[asyncio.get_running_loop().create_future() for i in range(20)])
 
     async def exit(self):
         session_close_task = None
@@ -113,8 +115,25 @@ class BinanceWs:
                 if isinstance(self._ws, WebSocketClientProtocol):
                     asyncio.create_task(self._ws.close())
 
+    def _find_first_pending_future_index(self):
+        # 找第一个pending的future
+
+        target_index = 0
+        for i in range(len(self._ws_data_containers) - 1, -1, -1):
+            if self._ws_data_containers[i].done():
+                target_index = i + 1
+                break
+        return target_index
+
     def _msg_handler(self, news):
-        pass
+        target_index = self._find_first_pending_future_index()
+        # 要设置值的future
+        self._ws_data_containers[target_index].set_result(news)
+        # 补上至少一半队列数个pending future
+        if target_index > self._ws_data_containers.maxlen // 2:
+            for _ in range(target_index - self._ws_data_containers.maxlen // 2):
+                self._ws_data_containers.append(asyncio.get_running_loop().create_future())
+
         # reciever_done = []
         # for reciever, _filters in self._detect_hook.items():
         #     if any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters]):
