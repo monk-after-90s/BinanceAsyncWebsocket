@@ -165,20 +165,19 @@ class BinanceWs:
         await self._ws_ok
         return self
 
-    # def _put_hook(self, type):
-    #     '''
-    #     在ws数据流中放置探测钩子
-    #
-    #     :param type: 类型，有order、balance等币安user data
-    #     :return:asyncio.Future类型的钩子
-    #     '''
-    #     if type == 'order':
-    #         hook_future = asyncio.get_running_loop().create_future()
-    #         self._detect_hook[hook_future] = [{"e": "executionReport"}]
-    #         return hook_future
+    def watch_order(self):
+        return self.watch(_filters=[{"e": "executionReport"}])
 
     @no_data_loss_async_generator_decorator
-    async def watch_order(self):
+    async def watch(self, _filters: list = None):
+        '''
+        观察筛选出的数据
+
+        :param _filters:[{condition1: ..., condition2: ...}, {condition3: ...}, ...]条件列表中的任何一个条件字典全部达成，便是目标
+        :return:
+        '''
+        if _filters is None:
+            _filters = []
         last_future = None
         while True:
             if not last_future:
@@ -190,14 +189,16 @@ class BinanceWs:
                     except IndexError:
                         self._safely_replace_longer_q()
                         current_future = self._ws_data_containers[self._find_first_pending_future_index()]
+                        logger.error(traceback.format_exc())
                         break
-            yield deepcopy(await current_future)
+                    else:
+                        break
+
+            news = await current_future
+            if (_filters and any([all([value == news[key] for key, value in _filter.items()]) for _filter in _filters])) \
+                    or not _filters:
+                yield deepcopy(news)
             last_future = current_future
-        # hook_future = self._put_hook('order')
-        # while True:
-        #     msg = await hook_future
-        #     hook_future = self._put_hook('order')
-        #     yield msg
 
     def _safely_replace_longer_q(self):
         '''
@@ -212,5 +213,7 @@ class BinanceWs:
         logger.debug(
             f'Extend deque:\n{beeprint.pp(self._ws_data_containers, sort_keys=False, string_break_enable=False)}')
 
+
+# todo 测试超负荷数据流，更换替换ws源的代码
 if __name__ == '__main__':
     pass
