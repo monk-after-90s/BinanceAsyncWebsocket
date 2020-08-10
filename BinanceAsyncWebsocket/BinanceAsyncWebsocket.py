@@ -8,7 +8,7 @@ from loguru import logger
 
 import websockets
 from websockets import WebSocketClientProtocol
-from NoLossAsyncGenerator import NoLossAsyncGenerator, no_data_loss_async_generator_decorator
+from NoLossAsyncGenerator import NoLossAsyncGenerator
 
 
 class BinanceWs:
@@ -196,11 +196,34 @@ class BinanceWs:
                     return handler(msg)
 
             self._handlers.add(new_handler)
-        # hook_future = self._put_hook('order')
-        # while True:
-        #     msg = await hook_future
-        #     hook_future = self._put_hook('order')
-        #     yield msg
+
+    def _filter_stream(self, _filters: list = None):
+        '''
+        Filter the ws data stream and push the filtered data to the async generator which is returned by the method.
+        Remember to explicitly call its close method to close the stream.
+
+        :param _filters:
+        :return:
+        '''
+        if _filters is None:
+            _filters = []
+
+        ag = NoLossAsyncGenerator(None)
+
+        def handler(msg):
+            if (_filters and any([all([value == msg[key] for key, value in _filter.items()]) for _filter in _filters])) \
+                    or not _filters:
+                ag.q.put_nowait(msg)
+
+        self._handlers.add(handler)
+        _close = ag.close
+
+        async def close():
+            self._handlers.remove(handler)
+            await _close()
+
+        ag.close = close
+        return ag
 
 
 if __name__ == '__main__':
