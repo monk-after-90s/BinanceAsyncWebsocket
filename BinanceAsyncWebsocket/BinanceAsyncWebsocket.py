@@ -4,6 +4,7 @@ import traceback
 from copy import deepcopy
 
 import beeprint
+from ensureTaskCanceled import ensureTaskCanceled
 from loguru import logger
 
 import websockets
@@ -120,14 +121,17 @@ class BinanceWs:
                 await asyncio.gather(time_limitted_ws_task, sleep_then_raise())
             except TimeoutError as e:  # 正常更换
                 if str(e) == 'Time to change ws.' and isinstance(self._ws_generator, NoLossAsyncGenerator):
-                    # 等待可能累积的数据全部吐出来并关闭
-                    await self._ws_generator.close()
-                logger.debug('\n' + traceback.format_exc())
+                    logger.debug('\n' + traceback.format_exc())
+                else:  # 异常更换
+                    logger.error('\n' + traceback.format_exc())
             except:  # 异常更换
                 logger.error('\n' + traceback.format_exc())
             finally:
                 if isinstance(self._ws, WebSocketClientProtocol):
-                    asyncio.create_task(self._ws.close())
+                    await asyncio.create_task(self._ws.close())
+                    # 等待可能累积的数据全部吐出来并关闭
+                    await self._ws_generator.close()
+                    await ensureTaskCanceled(time_limitted_ws_task)
 
     @classmethod
     async def create_instance(cls, apikey, secret):
