@@ -128,9 +128,9 @@ class BinanceWs:
                 logger.error('\n' + traceback.format_exc())
             finally:
                 if isinstance(self._ws, WebSocketClientProtocol):
-                    await asyncio.create_task(self._ws.close())
                     # 等待可能累积的数据全部吐出来并关闭
                     await self._ws_generator.close()
+                    await asyncio.create_task(self._ws.close())
                     await ensureTaskCanceled(time_limitted_ws_task)
 
     @classmethod
