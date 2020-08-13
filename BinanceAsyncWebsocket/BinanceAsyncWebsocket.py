@@ -130,8 +130,8 @@ class BinanceWs:
                 if isinstance(self._ws, WebSocketClientProtocol):
                     # 等待可能累积的数据全部吐出来并关闭
                     await self._ws_generator.close()
-                    await asyncio.create_task(self._ws.close())
-                    await ensureTaskCanceled(time_limitted_ws_task)
+                    asyncio.create_task(self._ws.close())
+                    asyncio.create_task(ensureTaskCanceled(time_limitted_ws_task))
 
     @classmethod
     async def create_instance(cls, apikey, secret):
