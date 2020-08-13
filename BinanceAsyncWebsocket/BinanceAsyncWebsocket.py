@@ -24,8 +24,10 @@ class BinanceWs:
         self._ws_generator: NoLossAsyncGenerator = None
         self._ws_ok: asyncio.Future = None
         self._handlers = set()
+        self._exiting = False
 
     async def exit(self):
+        self._exiting = True
         session_close_task = None
         ws_close_task = None
         if self._session:
@@ -109,7 +111,7 @@ class BinanceWs:
     async def _ws_manager(self):
         # 半小时发一个ping
         asyncio.create_task(self._infinity_post_listenKey())
-        while True:
+        while not self._exiting:
             # 20小时一换ws连接
             time_limitted_ws_task = asyncio.create_task(self._time_limitted_ws())
 
