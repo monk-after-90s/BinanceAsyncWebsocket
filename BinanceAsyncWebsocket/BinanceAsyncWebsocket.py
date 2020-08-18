@@ -195,7 +195,9 @@ class BinanceWs:
         ag = NoLossAsyncGenerator(None)
 
         def handler(msg):
-            if (_filters and any([all([value == msg[key] for key, value in _filter.items()]) for _filter in _filters])) \
+            if (_filters and any(
+                    [all([((key in msg) and (value == msg[key])) for key, value in _filter.items()]) for _filter in
+                     _filters])) \
                     or not _filters:
                 ag.q.put_nowait(msg)
 
