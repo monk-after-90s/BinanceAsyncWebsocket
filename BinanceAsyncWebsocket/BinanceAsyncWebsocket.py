@@ -68,13 +68,13 @@ class BinanceWs:
             print(listenKey)
             return listenKey
 
-    async def _extend_listenkey(self, new_listen_key: str):
-        async with self.session.put(
-                self.restful_baseurl + '/api/v3/userDataStream',
-                headers={'X-MBX-APIKEY': self._apikey},
-                data={'listenKey': new_listen_key}
-        )as r:
-            return await r.json()
+    # async def _extend_listenkey(self, new_listen_key: str):
+    #     async with self.session.put(
+    #             self.restful_baseurl + '/api/v3/userDataStream',
+    #             headers={'X-MBX-APIKEY': self._apikey},
+    #             data={'listenKey': new_listen_key}
+    #     )as r:
+    #         return await r.json()
 
     async def _close_listenkey(self, new_listen_key: str):
         async with self.session.delete(
