@@ -19,5 +19,3 @@ class TestBinanceFapiAsyncWs(AsyncTestCase):
         self.assertIn('listenKey', lk)
 
 
-if __name__ == '__main__':
-    asyncUnittest.run()
