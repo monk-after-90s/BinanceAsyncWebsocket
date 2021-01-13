@@ -1,6 +1,7 @@
 import aiohttp
 from AsyncWebsocketStreamInterface import AsyncWebsocketStreamInterface
 import asyncio
+import websockets
 
 
 class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
@@ -11,6 +12,7 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
         super(BinanceFapiAsyncWs, self).__init__()
         self._apikey = apikey
         self._session: aiohttp.ClientSession = None
+        self._delay_listenKey_invalid_running = False
 
     @property
     def session(self):
@@ -20,7 +22,10 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
         return self._session
 
     async def _generate_listenkey(self, debug=False):
-        # ts = int(datetime.datetime.utcnow().timestamp() * 1000)
+        if not self._delay_listenKey_invalid_running:  # 确保只运行一个心跳
+            asyncio.create_task(self._delay_listenKey_invalid())
+            self._delay_listenKey_invalid_running = True
+
         async with self.session.post(
                 self.restful_baseurl + '/fapi/v1/listenKey',
                 headers={'X-MBX-APIKEY': self._apikey},
@@ -34,6 +39,11 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
                 return listenKey
             else:
                 return await r.json()
+
+    async def _delay_listenKey_invalid(self):
+        while True:
+            await asyncio.create_task(asyncio.sleep(30 * 60))
+            await self._generate_listenkey()
 
     async def _create_ws(self):
         pass
