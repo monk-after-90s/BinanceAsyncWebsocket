@@ -1,3 +1,5 @@
+import json
+
 import aiohttp
 from AsyncWebsocketStreamInterface import AsyncWebsocketStreamInterface
 import asyncio
@@ -54,7 +56,8 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
         await asyncio.sleep(20 * 3600)
 
     async def _parse_raw_data(self, raw_data):
-        pass
+        msg = json.loads(raw_data)
+        return msg
 
     async def exit(self):
         super_exit_task = asyncio.create_task(super(BinanceFapiAsyncWs, self).exit())
