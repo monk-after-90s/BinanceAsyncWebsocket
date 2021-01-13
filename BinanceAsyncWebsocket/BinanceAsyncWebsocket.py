@@ -16,9 +16,8 @@ class BinanceWs:
     restful_baseurl = 'https://api.binance.com'
     ws_baseurl = 'wss://stream.binance.com:9443'
 
-    def __init__(self, apikey, secret):
+    def __init__(self, apikey):
         self._apikey = apikey
-        self._secret = secret
         self._session: aiohttp.ClientSession = None
         self._ws: websockets.WebSocketClientProtocol = None
         self._ws_generator: NoLossAsyncGenerator = None
