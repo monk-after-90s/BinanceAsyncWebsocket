@@ -4,6 +4,7 @@ import aiohttp
 from AsyncWebsocketStreamInterface import AsyncWebsocketStreamInterface
 import asyncio
 import websockets
+from loguru import logger
 
 
 class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
@@ -45,6 +46,7 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
     async def _delay_listenKey_invalid(self):
         while True:
             await asyncio.create_task(asyncio.sleep(30 * 60))
+            logger.debug('Time to delay listenKey invalid.')
             await self._generate_listenkey()
 
     async def _create_ws(self):
@@ -54,6 +56,7 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
     async def _when2create_new_ws(self):  # todo listenKey过期推送
         # 20小时更新连接一次
         await asyncio.sleep(20 * 3600)
+        logger.debug('Time to update ws connection.')
 
     async def _parse_raw_data(self, raw_data):
         msg = json.loads(raw_data)
