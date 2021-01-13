@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="BinanceAsyncWebsocket",
-    version="1.0.4",
+    version="2.0.0",
     author="Antas",
     author_email="",
     description="Binance asynchronous websocket SDK",
