@@ -53,9 +53,22 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
         ws = await websockets.connect(self.ws_baseurl + '/ws/' + await self._generate_listenkey())
         return ws
 
-    async def _when2create_new_ws(self):  # todo listenKey过期推送
-        # 20小时更新连接一次
-        await asyncio.sleep(20 * 3600)
+    async def _when2create_new_ws(self):
+        listenKeyExpired_stream = self.stream_filter([{'e': 'listenKeyExpired'}])
+
+        async def read_listenKeyExpired_stream(listenKeyExpired_stream):
+            async for news in listenKeyExpired_stream:
+                try:
+                    return
+                finally:
+                    asyncio.create_task(listenKeyExpired_stream.close())
+
+        read_listenKeyExpired_stream_task = asyncio.create_task(read_listenKeyExpired_stream(listenKeyExpired_stream))
+        # 20小时更新连接一次，或者服务端推送消息listenKey过期
+        await asyncio.create_task(
+            asyncio.wait(
+                [read_listenKeyExpired_stream_task, asyncio.sleep(20 * 3600)],
+                return_when='FIRST_COMPLETED'))
         logger.debug('Time to update ws connection.')
 
     async def _parse_raw_data(self, raw_data):
