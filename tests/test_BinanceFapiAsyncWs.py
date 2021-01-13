@@ -36,7 +36,6 @@ class TestBinanceFapiAsyncWs(AsyncTestCase):
         await ws_exit_task
         await rest_close_task
         await st_exit_close_task
-        asyncio.get_running_loop().stop()
 
     async def test_generate_listenkey(self):
         lk = await asyncio.create_task(self.ws._generate_listenkey(True))
