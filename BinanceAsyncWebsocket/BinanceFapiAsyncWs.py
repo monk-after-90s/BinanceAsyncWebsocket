@@ -80,3 +80,50 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
         if self._session:
             await asyncio.create_task(self._session.close())
         await super_exit_task
+
+
+if __name__ == '__main__':
+    import signal
+    import asyncio
+
+    """
+    信号值      符号      行为
+    2          SIGINT    进程终端，CTRL+C
+    9          SIGKILL   强制终端
+    15         SIGTEM    请求中断
+    20         SIGTOP    停止（挂起）进程 CRTL+D
+    """
+
+
+    def safely_exit():
+        asyncio.create_task(safely_exit_management())
+
+
+    loop = asyncio.get_event_loop()
+
+    loop.add_signal_handler(signal.SIGTERM, safely_exit)
+    loop.add_signal_handler(signal.SIGINT, safely_exit)
+
+
+    async def safely_exit_management():
+        bfws_task = asyncio.create_task(bfws.exit())
+        await bfws_task
+        print('Safely exit.')
+        loop.stop()
+
+
+    async def loop_task():
+        global bfws
+        bfws = BinanceFapiAsyncWs(input('apikey:'))
+        stream = bfws.stream_filter()
+        async for msg in stream:
+            logger.info(msg)
+
+
+    loop.create_task(loop_task())
+
+    try:
+        loop.run_forever()
+    finally:
+        loop.close()
+    exit()

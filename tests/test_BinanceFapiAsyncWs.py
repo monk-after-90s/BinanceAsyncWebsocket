@@ -1,4 +1,3 @@
-import asyncUnittest
 import asyncio as asyncio
 from asyncUnittest import AsyncTestCase
 from BinanceAsyncWebsocket import BinanceFapiAsyncWs
@@ -17,5 +16,3 @@ class TestBinanceFapiAsyncWs(AsyncTestCase):
     async def test_generate_listenkey(self):
         lk = await asyncio.create_task(self.ws._generate_listenkey(True))
         self.assertIn('listenKey', lk)
-
-
