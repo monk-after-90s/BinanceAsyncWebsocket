@@ -46,7 +46,8 @@ class BinanceFapiAsyncWs(AsyncWebsocketStreamInterface):
             await self._generate_listenkey()
 
     async def _create_ws(self):
-        pass
+        ws = await websockets.connect(self.ws_baseurl + '/ws/' + await self._generate_listenkey())
+        return ws
 
     async def _parse_raw_data(self, raw_data):
         pass
