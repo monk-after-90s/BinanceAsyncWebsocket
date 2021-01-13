@@ -135,8 +135,8 @@ class BinanceWs:
                     asyncio.create_task(ensureTaskCanceled(time_limitted_ws_task))
 
     @classmethod
-    async def create_instance(cls, apikey, secret):
-        self = cls(apikey, secret)
+    async def create_instance(cls, apikey):
+        self = cls(apikey)
         self._ws_ok = asyncio.get_running_loop().create_future()
         # 启动ws管理器
         asyncio.create_task(self._ws_manager())
