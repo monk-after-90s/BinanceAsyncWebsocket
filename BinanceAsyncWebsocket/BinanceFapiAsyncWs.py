@@ -2,7 +2,6 @@ import json
 
 import aiohttp
 from AsyncWebsocketStreamInterface import AsyncWebsocketStreamInterface
-import asyncio
 import websockets
 from loguru import logger
 
