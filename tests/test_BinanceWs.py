@@ -49,12 +49,13 @@ class TestOrder(AsyncTestCase):
 
         :return:
         '''
-        open_order_tasks = [asyncio.create_task(type(self).bn.create_order('BTC/USDT', 'limit', 'buy', 0.001, 1000))
+        price = int((await type(self).bn.fetch_order_book('BTC/USDT'))['bids'][0][0] * 0.8)
+        open_order_tasks = [asyncio.create_task(type(self).bn.create_order('BTC/USDT', 'limit', 'buy', 0.001, price))
                             for _ in range(10)]
         all_order_stream = type(self).aws.order_stream()
         n = 0
         async for msg in all_order_stream:
-            if msg['x'] == 'NEW' and float(msg['p']) == 1000 and msg['o'] == 'LIMIT' and msg['s'] == "BTCUSDT" and \
+            if msg['x'] == 'NEW' and float(msg['p']) == price and msg['o'] == 'LIMIT' and msg['s'] == "BTCUSDT" and \
                     float(msg['q']) == 0.001:
                 n += 1
                 if n >= 10:
@@ -62,7 +63,7 @@ class TestOrder(AsyncTestCase):
         [asyncio.create_task(type(self).bn.cancel_order((await task)['id'], (await task)['symbol']))
          for task in open_order_tasks]
         async for msg in all_order_stream:
-            if msg['x'] == 'CANCELED' and float(msg['p']) == 1000 and msg['o'] == 'LIMIT' and msg['s'] == "BTCUSDT" and \
+            if msg['x'] == 'CANCELED' and float(msg['p']) == price and msg['o'] == 'LIMIT' and msg['s'] == "BTCUSDT" and \
                     float(msg['q']) == 0.001:
                 n -= 1
                 if n <= 0:
