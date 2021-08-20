@@ -1,4 +1,4 @@
-from .BinanceAsyncWebsocket import BinanceWs
+from .BinanceAsyncWebsocket2 import BinanceWs
 from .BinanceFapiAsyncWs import BinanceFapiAsyncWs
 
-__all__ = ['BinanceWs', BinanceFapiAsyncWs]
+__all__ = [BinanceWs, BinanceFapiAsyncWs]
