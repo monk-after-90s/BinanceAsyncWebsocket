@@ -49,16 +49,17 @@ class TestOrder(AsyncTestCase):
 
         :return:
         '''
+        order_num = 1
         price = int((await type(self).bn.fetch_order_book('BTC/USDT'))['bids'][0][0] * 0.8)
         open_order_tasks = [asyncio.create_task(type(self).bn.create_order('BTC/USDT', 'limit', 'buy', 0.001, price))
-                            for _ in range(10)]
+                            for _ in range(order_num)]
         all_order_stream = type(self).aws.order_stream()
         n = 0
         async for msg in all_order_stream:
             if msg['x'] == 'NEW' and float(msg['p']) == price and msg['o'] == 'LIMIT' and msg['s'] == "BTCUSDT" and \
                     float(msg['q']) == 0.001:
                 n += 1
-                if n >= 10:
+                if n >= order_num:
                     break
         [asyncio.create_task(type(self).bn.cancel_order((await task)['id'], (await task)['symbol']))
          for task in open_order_tasks]
